@@ -1,0 +1,332 @@
+services:
+  # Databases
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: swapit
+      POSTGRES_PASSWORD: swapit123
+      POSTGRES_DB: swapit_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U swapit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - swapit-network
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: swapit
+      MONGO_INITDB_ROOT_PASSWORD: swapit123
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - swapit-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - swapit-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: swapit
+      RABBITMQ_DEFAULT_PASS: swapit123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - swapit-network
+
+  # Microservices
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - USER_SERVICE_URL=http://user-service:3001
+      - CATALOG_SERVICE_URL=http://catalog-service:3002
+      - SEARCH_SERVICE_URL=http://search-service:3003
+      - MESSAGING_SERVICE_URL=http://messaging-service:3004
+      - TRANSACTION_SERVICE_URL=http://transaction-service:3005
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3006
+      - REVIEW_SERVICE_URL=http://review-service:3007
+      - FAVORITE_SERVICE_URL=http://favorite-service:3008
+      - DELIVERY_SERVICE_URL=http://delivery-service:3009
+      - WALLET_SERVICE_URL=http://wallet-service:3010
+      - ADMIN_SERVICE_URL=http://admin-service:3011
+    depends_on:
+      - user-service
+      - catalog-service
+      - search-service
+      - messaging-service
+      - transaction-service
+      - notification-service
+      - review-service
+      - favorite-service
+      - delivery-service
+      - wallet-service
+      - admin-service
+    networks:
+      - swapit-network
+
+  user-service:
+    build:
+      context: .
+      dockerfile: ./services/user-service/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=postgresql://swapit:swapit123@postgres:5432/swapit_db
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: ./services/catalog-service/Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - DATABASE_URL=postgresql://swapit:swapit123@postgres:5432/swapit_db
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  search-service:
+    build:
+      context: .
+      dockerfile: ./services/search-service/Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  messaging-service:
+    build:
+      context: .
+      dockerfile: ./services/messaging-service/Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - MONGODB_URL=mongodb://swapit:swapit123@mongodb:27017/swapit?authSource=admin
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  transaction-service:
+    build:
+      context: .
+      dockerfile: ./services/transaction-service/Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - DATABASE_URL=postgresql://swapit:swapit123@postgres:5432/swapit_db
+      - CATALOG_SERVICE_URL=http://catalog-service:3002
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./services/notification-service/Dockerfile
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=development
+      - PORT=3006
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=your-email@gmail.com
+      - SMTP_PASS=your-app-password
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  review-service:
+    build:
+      context: .
+      dockerfile: ./services/review-service/Dockerfile
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=development
+      - PORT=3007
+      - DATABASE_URL=postgresql://swapit:swapit123@postgres:5432/swapit_db
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  favorite-service:
+    build:
+      context: .
+      dockerfile: ./services/favorite-service/Dockerfile
+    ports:
+      - "3008:3008"
+    environment:
+      - NODE_ENV=development
+      - PORT=3008
+      - DATABASE_URL=postgresql://swapit:swapit123@postgres:5432/swapit_db
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  delivery-service:
+    build:
+      context: .
+      dockerfile: ./services/delivery-service/Dockerfile
+    ports:
+      - "3009:3009"
+    environment:
+      - NODE_ENV=development
+      - PORT=3009
+      - DATABASE_URL=postgresql://swapit:swapit123@postgres:5432/swapit_db
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  wallet-service:
+    build:
+      context: .
+      dockerfile: ./services/wallet-service/Dockerfile
+    ports:
+      - "3010:3010"
+    environment:
+      - NODE_ENV=development
+      - PORT=3010
+      - DATABASE_URL=postgresql://swapit:swapit123@postgres:5432/swapit_db
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+  admin-service:
+    build:
+      context: .
+      dockerfile: ./services/admin-service/Dockerfile
+    ports:
+      - "3011:3011"
+    environment:
+      - NODE_ENV=development
+      - PORT=3011
+      - DATABASE_URL=postgresql://swapit:swapit123@postgres:5432/swapit_db
+      - RABBITMQ_URL=amqp://swapit:swapit123@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swapit-network
+
+volumes:
+  postgres_data:
+  mongo_data:
+  es_data:
+  rabbitmq_data:
+
+networks:
+  swapit-network:
+    driver: bridge
