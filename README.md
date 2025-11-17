@@ -2,7 +2,7 @@
 
 Une plateforme peer-to-peer pour l'achat, la vente et l'échange de vêtements et accessoires d'occasion, construite avec une architecture microservices.
 
-## 🏗️ Vue d'ensemble de l'architecture
+##  Vue d'ensemble de l'architecture
 
 SwapIt est construit avec une architecture microservices comprenant les services suivants :
 
@@ -19,7 +19,7 @@ SwapIt est construit avec une architecture microservices comprenant les services
 - **Wallet Service** - Porte-monnaie et transactions financières
 - **Admin Service** - Administration, modération et statistiques
 
-## 🛠️ Stack technologique
+##  Stack technologique
 
 - **Langage:** Node.js avec TypeScript
 - **Framework:** Express.js
@@ -30,18 +30,18 @@ SwapIt est construit avec une architecture microservices comprenant les services
 - **Message Queue:** RabbitMQ
 - **Containerisation:** Docker & Docker Compose
 
-## 📋 Prérequis
+##  Prérequis
 
 - Docker et Docker Compose installés
 - Node.js 20+ (pour le développement local)
 - Git
 
-## 🚀 Démarrage rapide
+##  Démarrage rapide
 
 ### 1. Cloner le dépôt
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/XavAsh/SwapIt.git
 cd SwapIt
 ```
 
@@ -65,7 +65,7 @@ Cela démarrera :
 - **RabbitMQ Management:** http://localhost:15672 (swapit/swapit123)
 - **Elasticsearch:** http://localhost:9200
 
-## 📚 Endpoints API
+##  Endpoints API
 
 ### User Service (`/api/users`)
 
@@ -162,7 +162,7 @@ npm run build
 npm start
 ```
 
-## 🧪 Tests
+##  Tests
 
 Des endpoints de health check sont disponibles pour tous les services :
 
@@ -173,7 +173,7 @@ curl http://localhost:3002/health  # Catalog Service
 # ... etc
 ```
 
-## 📖 Exemples d'appels API
+##  Exemples d'appels API
 
 ### Inscrire un utilisateur
 
@@ -212,7 +212,7 @@ curl -X POST http://localhost:3000/api/catalog \
 curl "http://localhost:3000/api/search/search?q=veste&category=jackets&minPrice=20&maxPrice=100"
 ```
 
-## 🏛️ Patterns d'architecture
+##  Patterns d'architecture
 
 - **Pattern API Gateway** - Point d'entrée unique pour tous les clients
 - **Architecture orientée événements** - Les services communiquent via des événements RabbitMQ
@@ -220,7 +220,7 @@ curl "http://localhost:3000/api/search/search?q=veste&category=jackets&minPrice=
 - **CQRS** - Ségrégation des responsabilités de commande et de requête pour la scalabilité
 - **Service Discovery** - Découverte simple basée sur les variables d'environnement
 
-## 📝 Types d'événements
+##  Types d'événements
 
 Le système utilise les types d'événements suivants pour la communication asynchrone :
 
@@ -233,7 +233,7 @@ Le système utilise les types d'événements suivants pour la communication asyn
 - `ShipmentCreated` / `OrderDelivered` - Déclenché lors de la création/livraison d'un envoi
 - `WalletCredited` / `WalletDebited` - Déclenché lors d'opérations sur le porte-monnaie
 
-## 🔒 Notes de sécurité
+##  Notes de sécurité
 
 - Les tokens JWT sont utilisés pour l'authentification
 - Les mots de passe sont hachés avec bcrypt
@@ -241,7 +241,7 @@ Le système utilise les types d'événements suivants pour la communication asyn
 - Activer HTTPS pour tous les services
 - Implémenter le rate limiting et la validation des entrées
 
-## 📦 Structure du projet
+##  Structure du projet
 
 ```
 SwapIt/
@@ -273,7 +273,7 @@ SwapIt/
 └── README.md
 ```
 
-## 🐛 Dépannage
+##  Dépannage
 
 ### Les services ne démarrent pas
 
@@ -288,10 +288,10 @@ SwapIt/
 - Vérifier les variables d'environnement dans docker-compose.yml
 - Vérifier les identifiants de la base de données
 
-## 📄 Licence
+##  Licence
 
 Ce projet est à des fins éducatives.
 
-## 👥 Contributeurs
+##  Contributeurs
 
 - Architecture et implémentation pour le projet de cours MDS Annecy
